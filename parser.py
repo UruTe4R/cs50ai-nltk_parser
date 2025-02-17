@@ -1,5 +1,6 @@
 import nltk
 import sys
+nltk.download('punkt_tab')
 
 TERMINALS = """
 Adj -> "country" | "dreadful" | "enigmatical" | "little" | "moist" | "red"
@@ -15,10 +16,10 @@ V -> "smiled" | "tell" | "were"
 """
 
 NONTERMINALS = """
-S -> NP VP | NP VP Conj NP VP | NP VP Conj VP | DNP VP | DNP VP Conj NP VP | DNP VP Conj VP | DNP VP Conj DNP VP | NP VP Conj DNP VP
-NP -> N | Adj NP | NP P NP
-DNP -> Det NP | Det NP P Det NP | Det NP P NP | NP P Det NP 
-VP -> V | V NP | V P NP | Adv V | V Adv | V DNP | V P DNP |
+S -> NP VP | NP VP Conj NP VP | NP VP Conj VP | NP VP P 
+NP -> N | AdjP N | Det N | Det AdjP N
+AdjP -> Adj | Adj AdjP
+VP -> V | VP NP | VP P NP | Adv VP | VP Adv
 """
 
 grammar = nltk.CFG.fromstring(NONTERMINALS + TERMINALS)
@@ -66,8 +67,9 @@ def preprocess(sentence):
     character.
     """
     sentence = sentence.lower().rstrip().replace(".", "")
-    tokenizer = nltk.tokenize.punkt.PunktLanguageVars()
-    words = tokenizer.word_tokenize(sentence)
+    # tokenizer = nltk.tokenize.punkt.PunktLanguageVars()
+    # words = tokenizer.word_tokenize(sentence)
+    words = nltk.word_tokenize(sentence)
     words = [w for w in words if any(c.isalpha() for c in w) and len(w) > 0]
     return words
 
@@ -80,10 +82,12 @@ def np_chunk(tree):
     noun phrases as subtrees.
     """
     np_list = []
-    for subtree in tree.subtrees():
-        if subtree.label() == "NP":
-            if not all([sub.label() != "NP" for sub in subtree.subtrees()]):
-                np_list.append(subtree)
+
+    for subtree in tree.subtrees(lambda t: t.label() == "NP"):
+        
+        if len(list(subtree.subtrees(lambda t: t.label() == "NP"))) == 1:
+            
+            np_list.append(subtree)
             
     print("np_list:", np_list)
     return np_list
